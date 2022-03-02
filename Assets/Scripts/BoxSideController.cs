@@ -5,6 +5,7 @@ using UnityEngine;
 public class BoxSideController : MonoBehaviour
 {
     [SerializeField] private PartOfPuzzle partOfPuzzle;
+    
     public bool isUsed;
     public bool isFinished;
     private Tween myTween;
@@ -24,7 +25,7 @@ public class BoxSideController : MonoBehaviour
     {
 #if UNITY_EDITOR
 
-        if (!Input.GetMouseButtonUp(0) || isUsed) return;
+        if (!Input.GetMouseButtonDown(0) || isUsed) return;
         
         var ray2 = Camera.main.ScreenPointToRay(Input.mousePosition);
 
