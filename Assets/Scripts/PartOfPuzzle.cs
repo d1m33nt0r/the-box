@@ -5,19 +5,21 @@ namespace DefaultNamespace
 {
     public class PartOfPuzzle : MonoBehaviour
     {
-        [SerializeField] private Transform targetTransform;
+        public event Action collisionDetected;
+        
+        private Vector3 startLocalEulerAngles;
 
-        private void OnTriggerEnter(Collider other)
+        private void Start()
         {
-            if (other.transform == targetTransform)
-            {
-                   
-            }
+            startLocalEulerAngles = transform.localRotation.eulerAngles;
         }
 
         private void OnCollisionEnter(Collision other)
         {
-           
+            //if (transform.parent.GetComponent<BoxSideController>().isUsed && !transform.parent.GetComponent<BoxSideController>().isFinished)
+            //{
+                collisionDetected?.Invoke();
+            //}
         }
     }
 }

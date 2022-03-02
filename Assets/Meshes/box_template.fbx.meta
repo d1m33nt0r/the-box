@@ -7,9 +7,6 @@ ModelImporter:
       74: 5121957931717055156
     second: Wide_Side|Fold_1
   - first:
-      74: -4604025771744833912
-    second: Wide_Side|Fold_1.001
-  - first:
       74: 1679288982900451841
     second: Wide_Side|Fold_1.002
   - first:
@@ -19,14 +16,8 @@ ModelImporter:
       74: 234639273028197984
     second: Wide_Side|Fold_1.004
   - first:
-      74: 5152111384317751134
-    second: Wide_Side|Fold_2
-  - first:
       74: 5801184302572644699
     second: Wide_Side.001|Fold_1
-  - first:
-      74: -7374075140155812013
-    second: Wide_Side.001|Fold_1.001
   - first:
       74: 3536565929251705244
     second: Wide_Side.001|Fold_1.002
@@ -37,14 +28,8 @@ ModelImporter:
       74: -7807322665991405990
     second: Wide_Side.001|Fold_1.004
   - first:
-      74: -3745842149980420206
-    second: Wide_Side.001|Fold_2
-  - first:
       74: 2644706128682589264
     second: Wide_Side.002|Fold_1
-  - first:
-      74: -5273313282207489652
-    second: Wide_Side.002|Fold_1.001
   - first:
       74: 5590700642453904565
     second: Wide_Side.002|Fold_1.002
@@ -55,14 +40,8 @@ ModelImporter:
       74: 3000637799940874155
     second: Wide_Side.002|Fold_1.004
   - first:
-      74: -5572672446250049063
-    second: Wide_Side.002|Fold_2
-  - first:
       74: 8985621085555755227
     second: Wide_Side.003|Fold_1
-  - first:
-      74: 5480202479256352305
-    second: Wide_Side.003|Fold_1.001
   - first:
       74: -6528524370805293022
     second: Wide_Side.003|Fold_1.002
@@ -72,9 +51,6 @@ ModelImporter:
   - first:
       74: 6278580231357541320
     second: Wide_Side.003|Fold_1.004
-  - first:
-      74: 7893930231606215619
-    second: Wide_Side.003|Fold_2
   externalObjects: {}
   materials:
     materialImportMode: 2

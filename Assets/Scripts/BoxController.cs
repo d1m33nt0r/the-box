@@ -5,6 +5,8 @@ namespace DefaultNamespace
 {
     public class BoxController : MonoBehaviour
     {
-        
+        private Stack<BoxSideController> stack;
+
+        private List<BoxSideController> sides;
     }
 }
