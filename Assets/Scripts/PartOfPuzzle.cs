@@ -7,19 +7,38 @@ namespace DefaultNamespace
     {
         public event Action collisionDetected;
         
-        private Vector3 startLocalEulerAngles;
-
+        private Vector3 rotationEulerAngles;
+        private RotationParam rotationParam;
+        private GameObject targetPuzzleGameObject;
+        private GameObject targetGameObject;
+        
         private void Start()
         {
-            startLocalEulerAngles = transform.localRotation.eulerAngles;
+            targetPuzzleGameObject = transform.parent.GetComponent<BoxSideController>().targetPuzzleGameObject;
+            targetGameObject = transform.parent.GetComponent<BoxSideController>().targetGameObject;
+            
+            rotationEulerAngles = transform.rotation.eulerAngles;
+            rotationParam = transform.parent.GetComponent<BoxSideController>().rotationParam;
         }
 
-        private void OnCollisionEnter(Collision other)
+        private void OnTriggerEnter(Collider other)
         {
-            //if (transform.parent.GetComponent<BoxSideController>().isUsed && !transform.parent.GetComponent<BoxSideController>().isFinished)
-            //{
-                collisionDetected?.Invoke();
-            //}
+            switch (rotationParam.axis)
+            {
+                case AxisOfRotation.X:
+                    if (other.gameObject != targetPuzzleGameObject && other.gameObject != targetGameObject)
+                    {
+                        collisionDetected?.Invoke();
+                    }
+                    break;
+                
+                case AxisOfRotation.Z:
+                    if (other.gameObject != targetPuzzleGameObject && other.gameObject != targetGameObject)
+                    {
+                        collisionDetected?.Invoke();
+                    }
+                    break;
+            }
         }
     }
 }

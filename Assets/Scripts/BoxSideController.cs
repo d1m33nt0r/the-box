@@ -1,3 +1,4 @@
+using System;
 using DefaultNamespace;
 using DG.Tweening;
 using UnityEngine;
@@ -6,19 +7,18 @@ public class BoxSideController : MonoBehaviour
 {
     [SerializeField] private PartOfPuzzle partOfPuzzle;
     
+    public RotationParam rotationParam;
+    public GameObject targetPuzzleGameObject;
+    public GameObject targetGameObject;
     public bool isUsed;
     public bool isFinished;
     private Tween myTween;
     private Sequence mySequence;
-    private Vector3 localEulerAngles;
     private bool isFoldingState;
     
     private void Start()
     {
         partOfPuzzle.collisionDetected += StopRotationAndRewind;
-        localEulerAngles = transform.rotation.eulerAngles;
-        mySequence = DOTween.Sequence();
-        isFoldingState = true;
     }
 
     private void Update()
@@ -33,38 +33,20 @@ public class BoxSideController : MonoBehaviour
         
         if (hit2.transform.name == transform.name && !isUsed && !isFoldingState)
         {
-            isFoldingState = true;
-            var lRot = transform.localRotation.eulerAngles;
-
-            myTween = transform.DOLocalRotate(new Vector3(localEulerAngles.x, lRot.y, lRot.z), 0.7f);
-            myTween.onComplete = () =>
+            switch (rotationParam.axis)
             {
-                GetComponent<Rigidbody>().isKinematic = false;
-                isFinished = true;
-                isUsed = false;
-            };
-            
-            mySequence.Append(myTween);
-            mySequence.onKill = () => mySequence.Rewind();
-            isUsed = true;
+                case AxisOfRotation.X:
+                    Fold(new Vector3(rotationParam.direction * 90, 0, 0));
+                    break;
+                case AxisOfRotation.Z:
+                    Fold(new Vector3(0, 0, rotationParam.direction * 90));
+                    break;
+            }
         }
         
         if (hit2.transform.name == transform.name && !isUsed && isFoldingState)
         {
-            isFoldingState = false;
-            var lRot = transform.localRotation.eulerAngles;
-
-            myTween = transform.DOLocalRotate(new Vector3(-180f, lRot.y, lRot.z), 0.7f);
-            myTween.onComplete = () =>
-            {
-                GetComponent<Rigidbody>().isKinematic = true;
-                isFinished = true;
-                isUsed = false;
-            };
-            
-            mySequence.Append(myTween);
-            mySequence.onKill = () => mySequence.Rewind();
-            isUsed = true;
+            Unfold(new Vector3(0,0,0));
         }
 
 #endif
@@ -83,47 +65,93 @@ public class BoxSideController : MonoBehaviour
             
         if (hit.transform.name == transform.name && !isUsed && !isFoldingState)
         {
-            isFoldingState = true;
-            var lRot = transform.localRotation.eulerAngles;
-
-            myTween = transform.DOLocalRotate(new Vector3(localEulerAngles.x, lRot.y, lRot.z), 0.7f);
-            myTween.onComplete = () =>
+            switch (rotationParam.axis)
             {
-                GetComponent<Rigidbody>().isKinematic = false;
-                isFinished = true;
-                isUsed = false;
-            };
-            
-            mySequence.Append(myTween);
-            mySequence.onKill = () => mySequence.Rewind();
-            isUsed = true;
+                case AxisOfRotation.X:
+                    Fold(new Vector3(rotationParam.direction * 90, 0, 0));
+                    break;
+                case AxisOfRotation.Z:
+                    Fold(new Vector3(0, 0, rotationParam.direction * 90));
+                    break;
+            }
         }
         
         if (hit.transform.name == transform.name && !isUsed && isFoldingState)
         {
-            isFoldingState = false;
-            var lRot = transform.localRotation.eulerAngles;
-
-            myTween = transform.DOLocalRotate(new Vector3(-180f, lRot.y, lRot.z), 0.7f);
-            myTween.onComplete = () =>
-            {
-                GetComponent<Rigidbody>().isKinematic = true;
-                isFinished = true;
-                isUsed = false;
-            };
-            
-            mySequence.Append(myTween);
-            mySequence.onKill = () => mySequence.Rewind();
-            isUsed = true;
+            Unfold(new Vector3(0,0,0));
         }
-        
 #endif
+    }
+
+    private void Unfold(Vector3 _eulerAngles)
+    {
+        mySequence = DOTween.Sequence();
+        isFoldingState = false;
+        myTween = transform.DORotate(_eulerAngles, 0.7f);
+        myTween.onComplete = () =>
+        {
+            isFinished = true;
+            isUsed = false;
+        };
+        mySequence.Append(myTween);
+        mySequence.onKill = () =>
+        {
+            mySequence.Delay();
+            mySequence.Rewind();
+        };
+        mySequence.onRewind = () =>
+        {
+            isFoldingState = true;
+            isUsed = false;
+            isFinished = true;
+        };
+        isUsed = true;
+    }
+
+    private void Fold(Vector3 _eulerAngles)
+    {
+        mySequence = DOTween.Sequence();
+        isFoldingState = true;
+        myTween = transform.DORotate(_eulerAngles, 1f);
+        myTween.onComplete = () =>
+        {
+            isFinished = true;
+            isUsed = false;
+        };
+        mySequence.Append(myTween);
+        mySequence.onKill = () =>
+        {
+            mySequence.Delay();
+            mySequence.Rewind();
+        };
+        mySequence.onRewind = () =>
+        {
+            isFoldingState = false;
+            isUsed = false;
+            isFinished = true;
+        };
+        isUsed = true;
     }
 
     private void StopRotationAndRewind()
     {
-        var lRot = transform.localRotation.eulerAngles;
-        GetComponent<Rigidbody>().isKinematic = true;
         mySequence.Kill();
     }
+   
+}
+
+[Serializable]
+public struct RotationParam
+{
+    public AxisOfRotation axis;
+    
+    [Range(-1, 1)] public int direction;
+}
+
+[Serializable]
+public enum AxisOfRotation
+{
+    X,
+    Y,
+    Z
 }
