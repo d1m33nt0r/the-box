@@ -9,7 +9,8 @@
         "LIGHTING",
         "OPTIONS",
         "THIRD PARTY PLUGINS",
-        "SURFACE"
+        "SURFACE",
+        "STYLIZATION"
     ],
     "UseCustomFont": true,
     "CustomFont": {

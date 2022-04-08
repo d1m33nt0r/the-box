@@ -22,6 +22,16 @@ Shader "Toony Colors Pro 2/User/My TCP2 Shader"
 		_RampSmoothing ("Smoothing", Range(0.001,1)) = 0.5
 		[TCP2Separator]
 		
+		[TCP2HeaderHelp(Outline)]
+		_OutlineWidth ("Width", Range(0.1,4)) = 1
+		_OutlineColorVertex ("Color", Color) = (0,0,0,1)
+		// Outline Normals
+		[TCP2MaterialKeywordEnumNoPrefix(Regular, _, Vertex Colors, TCP2_COLORS_AS_NORMALS, Tangents, TCP2_TANGENT_AS_NORMALS, UV1, TCP2_UV1_AS_NORMALS, UV2, TCP2_UV2_AS_NORMALS, UV3, TCP2_UV3_AS_NORMALS, UV4, TCP2_UV4_AS_NORMALS)]
+		_NormalsSource ("Outline Normals Source", Float) = 0
+		[TCP2MaterialKeywordEnumNoPrefix(Full XYZ, TCP2_UV_NORMALS_FULL, Compressed XY, _, Compressed ZW, TCP2_UV_NORMALS_ZW)]
+		_NormalsUVType ("UV Data Type", Float) = 0
+		[TCP2Separator]
+
 		//Avoid compile error if the properties are ending with a drawer
 		[HideInInspector] __dummy__ ("unused", Float) = 0
 	}
@@ -42,6 +52,8 @@ Shader "Toony Colors Pro 2/User/My TCP2 Shader"
 		sampler2D _MainTex;
 		
 		// Shader Properties
+		float _OutlineWidth;
+		fixed4 _OutlineColorVertex;
 		float4 _MainTex_ST;
 		fixed4 _Color;
 		float _RampThreshold;
@@ -93,6 +105,124 @@ Shader "Toony Colors Pro 2/User/My TCP2 Shader"
 
 		ENDCG
 
+		// Outline Include
+		CGINCLUDE
+
+		struct appdata_outline
+		{
+			float4 vertex : POSITION;
+			float3 normal : NORMAL;
+			#if TCP2_UV1_AS_NORMALS
+			float4 texcoord0 : TEXCOORD0;
+		#elif TCP2_UV2_AS_NORMALS
+			float4 texcoord1 : TEXCOORD1;
+		#elif TCP2_UV3_AS_NORMALS
+			float4 texcoord2 : TEXCOORD2;
+		#elif TCP2_UV4_AS_NORMALS
+			float4 texcoord3 : TEXCOORD3;
+		#endif
+		#if TCP2_COLORS_AS_NORMALS
+			float4 vertexColor : COLOR;
+		#endif
+		#if TCP2_TANGENT_AS_NORMALS
+			float4 tangent : TANGENT;
+		#endif
+			UNITY_VERTEX_INPUT_INSTANCE_ID
+		};
+
+		struct v2f_outline
+		{
+			float4 vertex : SV_POSITION;
+			float4 vcolor : TEXCOORD0;
+			UNITY_VERTEX_OUTPUT_STEREO
+		};
+
+		v2f_outline vertex_outline (appdata_outline v)
+		{
+			v2f_outline output;
+			UNITY_INITIALIZE_OUTPUT(v2f_outline, output);
+			UNITY_SETUP_INSTANCE_ID(v);
+			UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
+
+			// Shader Properties Sampling
+			float __outlineWidth = ( _OutlineWidth );
+			float4 __outlineColorVertex = ( _OutlineColorVertex.rgba );
+
+		#ifdef TCP2_COLORS_AS_NORMALS
+			//Vertex Color for Normals
+			float3 normal = (v.vertexColor.xyz*2) - 1;
+		#elif TCP2_TANGENT_AS_NORMALS
+			//Tangent for Normals
+			float3 normal = v.tangent.xyz;
+		#elif TCP2_UV1_AS_NORMALS || TCP2_UV2_AS_NORMALS || TCP2_UV3_AS_NORMALS || TCP2_UV4_AS_NORMALS
+			#if TCP2_UV1_AS_NORMALS
+				#define uvChannel texcoord0
+			#elif TCP2_UV2_AS_NORMALS
+				#define uvChannel texcoord1
+			#elif TCP2_UV3_AS_NORMALS
+				#define uvChannel texcoord2
+			#elif TCP2_UV4_AS_NORMALS
+				#define uvChannel texcoord3
+			#endif
+		
+			#if TCP2_UV_NORMALS_FULL
+			//UV for Normals, full
+			float3 normal = v.uvChannel.xyz;
+			#else
+			//UV for Normals, compressed
+			#if TCP2_UV_NORMALS_ZW
+				#define ch1 z
+				#define ch2 w
+			#else
+				#define ch1 x
+				#define ch2 y
+			#endif
+			float3 n;
+			//unpack uvs
+			v.uvChannel.ch1 = v.uvChannel.ch1 * 255.0/16.0;
+			n.x = floor(v.uvChannel.ch1) / 15.0;
+			n.y = frac(v.uvChannel.ch1) * 16.0 / 15.0;
+			//- get z
+			n.z = v.uvChannel.ch2;
+			//- transform
+			n = n*2 - 1;
+			float3 normal = n;
+			#endif
+		#else
+			float3 normal = v.normal;
+		#endif
+		
+		#if TCP2_ZSMOOTH_ON
+			//Correct Z artefacts
+			normal = UnityObjectToViewPos(normal);
+			normal.z = -_ZSmooth;
+		#endif
+			float size = 1;
+		
+		#if !defined(SHADOWCASTER_PASS)
+			output.vertex = UnityObjectToClipPos(v.vertex.xyz + normal * __outlineWidth * size * 0.01);
+		#else
+			v.vertex = v.vertex + float4(normal,0) * __outlineWidth * size * 0.01;
+		#endif
+		
+			output.vcolor.xyzw = __outlineColorVertex;
+
+			return output;
+		}
+
+		float4 fragment_outline (v2f_outline input) : SV_Target
+		{
+
+			// Shader Properties Sampling
+			float4 __outlineColor = ( float4(1,1,1,1) );
+
+			half4 outlineColor = __outlineColor * input.vcolor.xyzw;
+
+			return outlineColor;
+		}
+
+		ENDCG
+		// Outline Include End
 		// Main Surface Shader
 
 		CGPROGRAM
@@ -255,11 +385,30 @@ Shader "Toony Colors Pro 2/User/My TCP2 Shader"
 
 		ENDCG
 
+		//Outline
+		Pass
+		{
+			Name "Outline"
+			Tags
+			{
+				"LightMode"="ForwardBase"
+			}
+			Cull Front
+
+			CGPROGRAM
+			#pragma vertex vertex_outline
+			#pragma fragment fragment_outline
+			#pragma target 2.5
+			#pragma multi_compile _ TCP2_COLORS_AS_NORMALS TCP2_TANGENT_AS_NORMALS TCP2_UV1_AS_NORMALS TCP2_UV2_AS_NORMALS TCP2_UV3_AS_NORMALS TCP2_UV4_AS_NORMALS
+			#pragma multi_compile _ TCP2_UV_NORMALS_FULL TCP2_UV_NORMALS_ZW
+			#pragma multi_compile_instancing
+			ENDCG
+		}
 	}
 
 	Fallback "Diffuse"
 	CustomEditor "ToonyColorsPro.ShaderGenerator.MaterialInspector_SG2"
 }
 
-/* TCP_DATA u config(unity:"2020.3.12f1";ver:"2.7.4";tmplt:"SG2_Template_Default";features:list["UNITY_5_4","UNITY_5_5","UNITY_5_6","UNITY_2017_1","UNITY_2018_1","UNITY_2018_2","UNITY_2018_3","UNITY_2019_1","UNITY_2019_2","UNITY_2019_3","UNITY_2020_1","SHADOW_HSV"];flags:list["noforwardadd","addshadow"];flags_extra:dict[];keywords:dict[RENDER_TYPE="Opaque",RampTextureDrawer="[TCP2Gradient]",RampTextureLabel="Ramp Texture",SHADER_TARGET="2.5"];shaderProperties:list[];customTextures:list[];codeInjection:codeInjection(injectedFiles:list[];mark:False);matLayers:list[]) */
-/* TCP_HASH b62f55bde5f9b9a4f1c4ebf9149580e7 */
+/* TCP_DATA u config(unity:"2020.3.12f1";ver:"2.7.4";tmplt:"SG2_Template_Default";features:list["UNITY_5_4","UNITY_5_5","UNITY_5_6","UNITY_2017_1","UNITY_2018_1","UNITY_2018_2","UNITY_2018_3","UNITY_2019_1","UNITY_2019_2","UNITY_2019_3","UNITY_2020_1","SHADOW_HSV","OUTLINE"];flags:list["noforwardadd","addshadow"];flags_extra:dict[];keywords:dict[RENDER_TYPE="Opaque",RampTextureDrawer="[TCP2Gradient]",RampTextureLabel="Ramp Texture",SHADER_TARGET="2.5"];shaderProperties:list[];customTextures:list[];codeInjection:codeInjection(injectedFiles:list[];mark:False);matLayers:list[]) */
+/* TCP_HASH be81668c4dbaeed0fd0539a70a3456e4 */

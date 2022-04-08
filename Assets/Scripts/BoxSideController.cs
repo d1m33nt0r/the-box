@@ -15,7 +15,7 @@ public class BoxSideController : MonoBehaviour
     private Tween myTween;
     private Sequence mySequence;
     private bool isFoldingState;
-    
+
     private void Start()
     {
         partOfPuzzle.collisionDetected += StopRotationAndRewind;
